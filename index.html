@@ -1,0 +1,2182 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://code.jquery.com https://unpkg.com https://d3js.org https://threejs.org https://cdn.plot.ly https://stackpath.bootstrapcdn.com https://maps.googleapis.com https://cdn.tailwindcss.com https://ajax.googleapis.com https://kit.fontawesome.com https://cdn.datatables.net https://maxcdn.bootstrapcdn.com https://code.highcharts.com https://tako-static-assets-production.s3.amazonaws.com https://www.youtube.com https://fonts.googleapis.com https://fonts.gstatic.com https://pfst.cf2.poecdn.net https://puc.poecdn.net https://i.imgur.com https://wikimedia.org https://*.icons8.com https://*.giphy.com https://picsum.photos https://images.unsplash.com; frame-src 'self' https://www.youtube.com https://trytako.com; child-src 'self'; manifest-src 'self'; worker-src 'self'; upgrade-insecure-requests; block-all-mixed-content;">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>猫猫MBTI身份卡生成器</title>
+    <!-- Cropper.js v4 CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
+    <!-- Cropper.js v4 JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+    <!-- html2canvas for card screenshot -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #ff8c69;
+            --secondary-color: #7c4dff;
+            --background-color: #fff6f2;
+            --text-color: #333;
+            --card-bg: white;
+            --btn-primary: #ff7043;
+            --btn-secondary: #9575cd;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --border-radius: 16px;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+        }
+        
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        h1, h2, h3 {
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-align: center;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        .container {
+            width: 100%;
+            padding: 20px;
+        }
+        
+        .card {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 20px var(--shadow-color);
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 14px 28px;
+            background-color: var(--btn-primary);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-align: center;
+            margin: 10px 0;
+            width: 100%;
+            box-shadow: 0 4px 8px rgba(255, 112, 67, 0.2);
+        }
+        
+        .btn:hover {
+            background-color: #ff5722;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(255, 112, 67, 0.3);
+        }
+        
+        .btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .btn-secondary {
+            background-color: var(--btn-secondary);
+            box-shadow: 0 4px 8px rgba(149, 117, 205, 0.2);
+        }
+        
+        .btn-secondary:hover {
+            background-color: #7e57c2;
+            box-shadow: 0 6px 12px rgba(149, 117, 205, 0.3);
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .step {
+            margin-bottom: 30px;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* 照片上传区域 */
+        .photo-upload {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        .photo-preview {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background-color: #f0f0f0;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+            border: 3px solid var(--primary-color);
+            box-shadow: 0 5px 15px rgba(255, 140, 105, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .photo-preview:hover {
+            transform: scale(1.05);
+        }
+        
+        .photo-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .upload-btn-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            margin-top: 10px;
+        }
+        
+        .upload-btn-wrapper input[type=file] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        
+        .hint {
+            color: #888;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        
+        /* 表单样式 */
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #444;
+        }
+        
+        input[type="text"],
+        input[type="date"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus,
+        input[type="date"]:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+        
+        .gender-select {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 15px;
+        }
+        
+        .gender-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            padding: 15px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            width: 30%;
+            border: 2px solid transparent;
+        }
+        
+        .gender-option:hover {
+            background-color: rgba(255, 149, 102, 0.1);
+            transform: translateY(-3px);
+        }
+        
+        .gender-option.selected {
+            background-color: rgba(255, 149, 102, 0.2);
+            border-color: var(--primary-color);
+        }
+        
+        .gender-icon {
+            font-size: 36px;
+            margin-bottom: 8px;
+            color: var(--primary-color);
+        }
+        
+        /* 测试题目样式 */
+        .question-container {
+            margin-bottom: 30px;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            background-color: white;
+            box-shadow: 0 5px 15px var(--shadow-color);
+        }
+        
+        .question {
+            margin-bottom: 20px;
+        }
+        
+        .question h3 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: var(--text-color);
+            text-align: left;
+        }
+        
+        .questions-progress {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            flex-grow: 1;
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            margin: 0 15px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .option {
+            padding: 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            padding-left: 50px;
+        }
+        
+        .option:before {
+            content: '';
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ccc;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+        
+        .option:hover {
+            background-color: rgba(255, 149, 102, 0.05);
+            border-color: #ddd;
+            transform: translateY(-2px);
+        }
+        
+        .option.selected {
+            background-color: rgba(255, 149, 102, 0.1);
+            border-color: var(--primary-color);
+        }
+        
+        .option.selected:before {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        /* 结果卡片样式 */
+        .result-card {
+            text-align: center;
+            padding: 0;
+            border-radius: var(--border-radius);
+            background-color: white;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .result-header {
+            padding: 30px 20px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .result-header:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            opacity: 0.9;
+            z-index: -1;
+        }
+        
+        .result-photo {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            border: 5px solid white;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+            position: relative;
+            z-index: 2;
+        }
+        
+        .result-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .result-name {
+            color: white;
+            font-size: 28px;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .mbti-type {
+            font-size: 42px;
+            font-weight: bold;
+            margin: 5px 0;
+            color: white;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        .mbti-title {
+            font-size: 20px;
+            margin-bottom: 10px;
+            font-style: italic;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .result-body {
+            padding: 30px;
+            background: white;
+        }
+        
+        .mbti-description {
+            text-align: left;
+            margin-bottom: 25px;
+            font-size: 16px;
+            line-height: 1.8;
+            padding: 0 10px;
+        }
+        
+        .cat-style {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: bold;
+            margin: 10px 0 20px;
+            padding: 12px 24px;
+            border-radius: 30px;
+            background: linear-gradient(135deg, #fff5eb 0%, #fdeef5 50%, #eef4ff 100%);
+            border: 2px solid var(--primary-color);
+            box-shadow: 0 2px 12px rgba(255, 140, 105, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cat-style::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: -20px;
+            width: 40px;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            clip-path: polygon(0 0, 80% 0, 60% 100%, 0% 100%);
+        }
+
+        .cat-style-emoji {
+            font-size: 26px;
+            line-height: 1;
+            flex-shrink: 0;
+            z-index: 1;
+            margin-left: 12px;
+        }
+
+        .cat-style-text {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            z-index: 1;
+        }
+
+        .cat-style-label {
+            font-size: 11px;
+            color: #999;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .cat-style-value {
+            font-size: 16px;
+            color: var(--primary-color);
+            letter-spacing: 0.5px;
+        }
+        
+        .personality-analysis {
+            text-align: left;
+            margin: 30px 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 12px;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .personality-analysis h4 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .personality-analysis ul {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .personality-analysis li {
+            margin-bottom: 8px;
+        }
+        
+        .mbti-stats {
+            display: flex;
+            justify-content: space-between;
+            margin: 30px 0 20px;
+            padding: 0 10px;
+        }
+        
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .stat-bar {
+            width: 14px;
+            height: 80px;
+            background-color: #f0f0f0;
+            border-radius: 7px;
+            position: relative;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+        
+        .stat-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: var(--primary-color);
+            border-radius: 7px;
+        }
+        
+        .stat-labels {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .stat-labels .top, .stat-labels .bottom {
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        
+        .stat-labels .value {
+            font-size: 12px;
+            color: #999;
+        }
+        
+        .trait-tags {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .trait-tag {
+            background-color: rgba(255, 149, 102, 0.1);
+            color: var(--primary-color);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 25px;
+        }
+        
+        /* 保存身份卡所需的样式 */
+        .download-container {
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .btn {
+                padding: 12px 20px;
+            }
+            
+            .result-photo {
+                width: 150px;
+                height: 150px;
+            }
+            
+            .mbti-stats {
+                padding: 0;
+            }
+            
+            .stat-bar {
+                height: 60px;
+            }
+        }
+
+        /* ===== 裁切弹窗样式 ===== */
+        .crop-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .crop-modal.active {
+            display: flex;
+        }
+
+        .crop-modal-content {
+            background: #fff;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .crop-modal-header {
+            padding: 16px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--primary-color);
+            text-align: center;
+            border-bottom: 1px solid #eee;
+            flex-shrink: 0;
+        }
+
+        .crop-image-wrapper {
+            position: relative;
+            width: 100%;
+            max-height: 50vh;
+            overflow: hidden;
+            background: #f0f0f0;
+        }
+
+        .crop-image-wrapper img {
+            display: block;
+            max-width: 100%;
+        }
+
+        .crop-modal-footer {
+            display: flex;
+            gap: 12px;
+            padding: 16px 20px;
+            border-top: 1px solid #eee;
+            flex-shrink: 0;
+        }
+
+        .crop-modal-footer .btn {
+            flex: 1;
+            margin: 0;
+        }
+
+        /* ===== 性格深度解析区块样式 ===== */
+        .analysis-list {
+            margin: 8px 0 16px 0;
+            padding-left: 20px;
+        }
+        .analysis-list li {
+            margin-bottom: 6px;
+            line-height: 1.6;
+            color: #444;
+        }
+
+        .analysis-scenes {
+            background: linear-gradient(135deg, #FFF8E1 0%, #FFF3E0 100%);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin: 12px 0;
+            border-left: 4px solid #FFB74D;
+        }
+        .analysis-scenes p {
+            margin: 0 0 8px 0 !important;
+        }
+        .scenes-list {
+            margin: 0;
+            padding-left: 18px;
+            list-style: none;
+        }
+        .scenes-list li {
+            margin-bottom: 8px;
+            line-height: 1.65;
+            color: #5D4037;
+            position: relative;
+            padding-left: 4px;
+        }
+
+        .analysis-tips-list {
+            margin: 8px 0 0 0;
+            padding-left: 20px;
+        }
+        .analysis-tips-list li {
+            margin-bottom: 6px;
+            line-height: 1.6;
+            color: #2E7D32;
+            font-weight: 500;
+        }
+        .analysis-tips-text {
+            margin: 8px 0 0 0;
+            color: #2E7D32;
+            font-weight: 500;
+        }
+
+        @media (max-width: 600px) {
+            .analysis-scenes {
+                padding: 10px 12px;
+                border-radius: 10px;
+            }
+            .scenes-list li {
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .crop-modal-content {
+                width: 95%;
+                border-radius: 12px;
+            }
+
+            .crop-modal-header {
+                font-size: 16px;
+                padding: 12px 16px;
+            }
+
+            .crop-modal-footer {
+                padding: 12px 16px;
+            }
+
+            .crop-image-wrapper {
+                max-height: 40vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐱 猫猫MBTI身份卡生成器 🐱</h1>
+        
+        <!-- 首页 -->
+        <div id="homepage" class="card">
+            <h2>探索你家猫猫的独特性格</h2>
+            <p>每只猫猫都有独特的性格魅力！通过这个有趣的MBTI测试，深入了解你家毛孩子的内心世界~</p>
+            <p>完成测试后，你将获得一张专属的猫猫性格身份卡，展示猫猫的MBTI类型和个性特点！</p>
+            <button class="btn" id="startBtn">创建猫猫专属档案</button>
+        </div>
+        
+        <!-- 步骤1：上传照片 -->
+        <div id="step1" class="step card hidden">
+                <h2>第一步：上传猫猫照片</h2>
+                <div class="photo-upload">
+                    <div class="photo-preview" id="photoPreview">
+                        <span id="photoPlaceholder">点击添加照片</span>
+                    </div>
+                    <p class="hint">上传一张猫猫的清晰正面照，能看到表情的照片效果最佳哦～</p>
+                    <div class="upload-btn-wrapper">
+                        <button class="btn btn-secondary">选择照片</button>
+                        <input type="file" id="photoInput" accept="image/*">
+                    </div>
+                    <!-- 裁切弹窗 -->
+                    <div id="cropModal" class="crop-modal">
+                        <div class="crop-modal-content">
+                            <div class="crop-modal-header">裁剪猫猫头像</div>
+                            <div class="crop-image-wrapper">
+                                <img id="cropImage" src="" alt="裁剪图片">
+                            </div>
+                            <div class="crop-modal-footer">
+                                <button class="btn btn-secondary" id="cancelCrop">取消</button>
+                                <button class="btn" id="applyCrop">应用剪裁</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="navigation">
+                    <button class="btn" id="backToHome">返回</button>
+                    <button class="btn" id="goToStep2">下一步</button>
+                </div>
+            </div>
+        
+        
+        <!-- 步骤2：填写基础信息 -->
+        <div id="step2" class="step card hidden">
+            <h2>第二步：猫猫基本信息</h2>
+            <div class="form-group">
+                <label for="catName">猫猫昵称</label>
+                <input type="text" id="catName" placeholder="喵主子" required="">
+            </div>
+            <div class="form-group">
+                <label for="birthdate">出生日期（选填）</label>
+                <input type="date" id="birthdate">
+            </div>
+            <div class="form-group">
+                <label>性别</label>
+                <div class="gender-select">
+                    <div class="gender-option" id="genderMale">
+                        <div class="gender-icon">♂</div>
+                        <span>男孩</span>
+                    </div>
+                    <div class="gender-option" id="genderFemale">
+                        <div class="gender-icon">♀</div>
+                        <span>女孩</span>
+                    </div>
+                    <div class="gender-option" id="genderUnknown">
+                        <div class="gender-icon">❓</div>
+                        <span>未知</span>
+                    </div>
+                </div>
+            </div>
+            <div class="navigation">
+                <button class="btn" id="backToStep1">返回</button>
+                <button class="btn" id="generateInitial">生成初始档案</button>
+            </div>
+        </div>
+        
+        <!-- 步骤3：生成初始档案 -->
+        <div id="step3" class="step card hidden">
+            <h2>第三步：初始档案</h2>
+            <div class="result-card" id="initialCard">
+                <div class="result-header">
+                    <div class="result-photo">
+                        <img id="resultPhoto" src="" alt="猫猫照片">
+                    </div>
+                    <h3 class="result-name" id="resultName"></h3>
+                    <p style="color: white;">即将揭晓的独特喵格</p>
+                </div>
+                <div class="result-body">
+                    <p>接下来，我们会通过一系列有趣的问题，来深入分析猫猫的性格特点，找到最匹配的MBTI类型！</p>
+                    <p>回答时，请根据猫猫平时的真实表现选择，这样测试结果会更准确哦～</p>
+                </div>
+            </div>
+            <div class="navigation">
+                <button class="btn" id="backToStep2">返回修改</button>
+                <button class="btn" id="startTestBtn">开始性格测试</button>
+            </div>
+        </div>
+        
+        <!-- 测试页面 -->
+        <div id="test" class="step hidden">
+            <div class="questions-progress">
+                <span id="currentQuestionText">问题 1/20</span>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <span id="percentComplete">5%</span>
+            </div>
+            
+            <div class="question-container">
+                <div id="questionContainer" class="question">
+                    <!-- 问题会通过JavaScript动态添加 -->
+                </div>
+            </div>
+            
+            <div class="navigation">
+                <button class="btn" id="prevQuestion" disabled="">上一题</button>
+                <button class="btn" id="nextQuestion">下一题</button>
+            </div>
+        </div>
+        
+        <!-- 结果页面 -->
+        <div id="result" class="step hidden">
+            <h2>猫猫MBTI身份卡</h2>
+            <div class="result-card" id="finalCard">
+                <div class="result-header" id="resultHeader">
+                    <div class="result-photo">
+                        <img id="finalPhoto" src="" alt="猫猫照片">
+                    </div>
+                    <h3 class="result-name" id="finalName"></h3>
+                    <div class="mbti-type" id="mbtiType"></div>
+                    <div class="mbti-title" id="mbtiTitle"></div>
+                </div>
+                <div class="result-body">
+                    <div class="mbti-description" id="mbtiDescription"></div>
+                    
+                    <div class="trait-tags" id="traitTags">
+                        <!-- 特性标签会通过JavaScript动态添加 -->
+                    </div>
+                    
+                    <div class="cat-style" id="catStyle"></div>
+                    
+                    <div class="personality-analysis" id="personalityAnalysis">
+                        <!-- 性格分析会通过JavaScript动态添加 -->
+                    </div>
+                    
+                    <div class="mbti-stats" id="mbtiStats">
+                        <!-- 统计信息会通过JavaScript动态添加 -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="download-container">
+                <p class="hint" id="downloadHint">点击下方按钮，将身份卡保存为图片</p>
+            </div>
+            
+            <button class="btn" id="takeScreenshotBtn">下载身份卡图片</button>
+            <button class="btn btn-secondary" id="resetTestBtn">重新测试</button>
+        </div>
+    </div>
+
+    <script>
+        // 等待DOM加载完成后再执行JavaScript
+        document.addEventListener('DOMContentLoaded', function() {
+            // 全局变量
+            let currentStep = 'homepage';
+            let gender = 'unknown';
+            let currentQuestion = 0;
+            let answers = [];
+            let catPhoto = '';
+            let detailedResults = {};
+            let catName = '喵主子'; // 默认猫咪名称
+            
+            // 插入限制出生日期的代码
+            const today = new Date();
+            const year = today.getFullYear();
+            let month = today.getMonth() + 1;
+            let day = today.getDate();
+
+            // 确保月和日是两位数
+            month = month < 10 ? '0' + month : month;
+            day = day < 10 ? '0' + day : day;
+
+            const maxDate = year + '-' + month + '-' + day;
+            document.getElementById('birthdate').setAttribute('max', maxDate);
+            
+            // MBTI数据 - 增强描述和分析内容，修复引号问题
+            const mbtiData = {
+                "ISTJ": {
+                    "title": "秩序执行官",
+                    "description": "作为家中的时间管理大师，严谨的ISTJ猫咪会精确控制一切。它会准时在清晨5点叫你起床，对猫碗偏移0.5cm都能发出警告叫声，是餐前仪式和生活规则的坚定维护者。",
+                    "catStyle": "🎩 西装三花·怀表绅士",
+                    "colors": ["#1a3a6a", "#f9d77e"],
+                    "traits": ["有序", "可靠", "传统", "安静"],
+                    "analysis": {
+                        "title": "ISTJ性格深度解析",
+                        "strengths": [
+                            "极其可靠，从不食言——说好蹭你就一定会蹭，哪怕你晚了十分钟它还在原地等",
+                            "对规则和仪式的尊重令人敬佩——喂食顺序错了会抗议，猫砂盆不干净绝不上",
+                            "处事冷静，情绪稳定——家里来再多客人也淡定如常，绝不慌乱",
+                            "细致观察生活中的微小变化——你的水杯位置偏了、换了新洗发水，它全知道",
+                            "自律性极强——不需要你催促就按时吃饭睡觉，是所有猫里的「模范生」"
+                        ],
+                        "weaknesses": [
+                            "对变化有抵触情绪——换个猫粮品牌能绝食抗议三天",
+                            "有时固执己见，认准的睡觉地点谁也挪不动",
+                            "可能显得过于严肃，不太会撒娇卖萌讨罐头",
+                            "对新事物接受慢——新玩具放那两周了才肯正眼看一下"
+                        ],
+                        "scenes": [
+                            "🕰 每天早上6:03准时站在你脸上叫早，误差不超过2分钟",
+                            "🥣 猫碗必须摆在垫子正中央，歪了就会用鼻子一点点拱回去",
+                            "💙 你感冒卧床的那几天，它安静地趴在床脚守着，比平时更乖巧"
+                        ],
+                        "tips": [
+                            "保持固定的时间表——这类猫咪靠规律感获得安全感，随意打乱会让它焦虑",
+                            "变化要循序渐进——换粮、搬家、新成员加入，都给它至少一周的适应期",
+                            "尊重它的「神圣不可侵犯区」——选定的睡觉角落和进食仪式不要轻易打破",
+                            "夸奖比强迫更有效——做对了及时表扬（语气夸张一点），它会记住并重复"
+                        ]
+                    }
+                },
+                "ISFJ": {
+                    "title": "守护天使猫",
+                    "description": "细心体贴的ISFJ猫咪能记住你的每一个习惯和喜好。它总是在你加班回家时用踩奶治愈你的疲惫，但对于你摸其他猫显示出明显的不满。它是忠诚的家庭守护者。",
+                    "catStyle": "👼 布偶天使·治愈之翼",
+                    "colors": ["#f8f6ff", "#ffccd5"],
+                    "traits": ["忠诚", "细心", "保护欲", "记性好"],
+                    "analysis": {
+                        "title": "ISFJ性格深度解析",
+                        "strengths": [
+                            "超高的忠诚度——你是它的全世界，这份专一让人感动到想哭",
+                            "能察觉主人最微小的情绪变化——你不开心时它第一个知道",
+                            "贴心周到，天生会照顾人——踩奶、呼噜、陪睡，治愈技能拉满",
+                            "记忆力惊人——记得你每天回家的路线，提前去门口等",
+                            "默默守护型的陪伴者——不需要热闹互动，你在哪它在哪就是最大的安心"
+                        ],
+                        "weaknesses": [
+                            "可能过度敏感——你说它一句，它能郁闷一整天",
+                            "占有欲强但不善表达——你摸别的猫它会暗中观察然后冷暴力",
+                            "害怕被忽视或遗忘——忙的时候不理它，会用「故意捣乱」引起注意",
+                            "不太擅长适应变动——你加班变多、作息改变，它会焦虑得掉毛"
+                        ],
+                        "scenes": [
+                            "💼 你加班到家深夜11点，它还守在门口没睡，见面先蹭再踩奶",
+                            "😤 你抱了朋友的猫回来，它背对着你坐了一晚上不搭理你",
+                            "🤧 你哭的时候它会用爪子轻轻拍你的脸，然后把头靠在你手心"
+                        ],
+                        "tips": [
+                            "每天固定的亲密时光很重要——哪怕只是10分钟的专注陪伴，让它感到被重视",
+                            "不开心时要温柔解释——它虽然听不懂语言，但能感受到语气和态度的变化",
+                            "不要长时间冷落它——忙碌的日子也要偶尔喊一声它的名字，摸一下头",
+                            "搬家或环境变化前，先把带有你气味的物品放在新环境中让它熟悉"
+                        ]
+                    }
+                },
+                "INFJ": {
+                    "title": "通灵大师猫",
+                    "description": "神秘的INFJ猫咪仿佛拥有第六感，能准确预判你回家的时间并在门口等候。它时常盯着空气中的某处突然炸毛，似乎能看到人类无法察觉的存在，让人不禁怀疑：它是否通晓了某些奥秘？",
+                    "catStyle": "🔮 异瞳黑猫·通灵占卜师",
+                    "colors": ["#6a4c93", "#d7d9e2"],
+                    "traits": ["神秘", "敏感", "洞察力", "独立"],
+                    "analysis": {
+                        "title": "INFJ性格深度解析",
+                        "strengths": [
+                            "对人类情绪有超乎寻常的敏感度——你还没开口它就知道你要说什么",
+                            "能预测主人的行为模式——你拿起钥匙它就去门口，比闹钟还准",
+                            "内心深刻，有自己的精神世界——常常凝视远方，像在思考喵生哲理",
+                            "独特的直觉能力——盯着空气某处突然炸毛，仿佛看到了什么",
+                            "安静但深情的陪伴者——不说爱，但每一步都跟着你走"
+                        ],
+                        "weaknesses": [
+                            "容易受环境影响而情绪波动——家里吵架它会躲起来发抖",
+                            "有时过于沉浸在自己的世界中——叫它名字可能要反应好几秒",
+                            "可能显得神秘莫测难以理解——你永远不知道它下一秒要干啥",
+                            "对负面能量特别敏感——家里气氛不好时它是最先感知到的那个"
+                        ],
+                        "scenes": [
+                            "👻 深夜突然盯着房间的空角落，全身炸毛盯了五分钟然后若无其事走开",
+                            "🔮 你还在电梯里它就已经蹲在门口等着了，怎么做到的至今是谜",
+                            "💭 阳光好的时候坐在窗边一动不动半小时，像在参悟什么宇宙真理"
+                        ],
+                        "tips": [
+                            "尊重它的独处时间——它需要定期「闭关」来恢复精神能量，不要强行打扰",
+                            "家庭氛围要保持和谐——它是家里的「情绪晴雨表」，紧张气氛会让它不安",
+                            "通过温和的方式建立深层信任——不要急躁，让它按自己的节奏接近你",
+                            "给它一个固定的安全角落——一个只有它知道的、不会被侵犯的小天地"
+                        ]
+                    }
+                },
+                "INTJ": {
+                    "title": "高冷战略家",
+                    "description": "精明的INTJ猫咪是家中的冷漠策略家。它选择性失聪大师，对你的召唤毫无反应，但只要听到一丝罐头声就会立刻现身。它的眼神中似乎总写着对主人智商的嫌弃，暗中策划着如何统治这个家。",
+                    "catStyle": "🎯 缅因战神·战术指挥官",
+                    "colors": ["800000", "#2e2e2e"],
+                    "traits": ["独立", "智慧", "战略眼光", "内敛"],
+                    "analysis": {
+                        "title": "INTJ性格深度解析",
+                        "strengths": [
+                            "独立自主，不需要时刻关注——自己能玩一天不找你",
+                            "极高的智力和解决问题的能力——开滑门、拧瓶盖无师自通",
+                            "冷静理智，几乎不受情绪影响——打翻了东西面不改色地走开",
+                            "善于制定长期策略——为了骗到零食可以布局三天",
+                            "眼神里写满了「我早就看穿你了」——聪明得让人又爱又恨"
+                        ],
+                        "weaknesses": [
+                            "可能表现得过于疏离——你想贴贴它却转身走了",
+                            "傲娇到极致，绝不轻易示好——明明喜欢被摸，偏要装作不耐烦",
+                            "对不合逻辑的事物零容忍——你做的傻事它会用鄙视的眼神全程围观",
+                            "挑战权威是日常——你越说不准它越要试试底线在哪"
+                        ],
+                        "scenes": [
+                            "📺 你喊了八遍名字它纹丝不动，罐头盖一响0.3秒瞬移到你脚边",
+                            "👀 打翻水杯后淡定地看着你收拾残局，眼神仿佛在说：这是物理学的必然结果",
+                            "🧠 盯着你开了三天冰箱门之后，第四天你自己打开发现它已经在里面吃火腿了"
+                        ],
+                        "tips": [
+                            "给它足够的独立空间——它不是不喜欢你，只是需要「猫咪时间」",
+                            "用智力游戏代替强制互动——迷宫喂食器、藏食玩具能让它对你刮目相看",
+                            "不要强迫肢体接触——让它主动来找你，被动靠近时它会更享受",
+                            "尊重它的智商——别试图用假动作骗它，它会记住并降低对你的信任度"
+                        ]
+                    }
+                },
+                "ISTP": {
+                    "title": "机械师猫",
+                    "description": "实践派的ISTP猫咪是天生的机械探索者。它能解构家中任何设备，从自动喂食器到你的笔记本电脑，拆卸后往往还能保留所有零件，只是不一定能复原。其灵巧的爪子是天生的工具。",
+                    "catStyle": "🔧 虎斑技师·万能工具猫",
+                    "colors": ["#707070", "#ff9d4d"],
+                    "traits": ["灵活", "冷静", "实用", "好奇"],
+                    "analysis": {
+                        "title": "ISTP性格深度解析",
+                        "strengths": [
+                            "极强的动手能力和空间感——任何缝隙都能钻进去再钻出来",
+                            "面对紧急情况冷静沉着——被卡住了不慌不叫，自己想办法脱身",
+                            "适应力超强——搬家第一天就像住了一辈子一样自在",
+                            "对机械结构有天生的理解力——门把手、抽屉开关一学就会",
+                            "务实派行动家——少说多做，解决问题比抱怨高效多了"
+                        ],
+                        "weaknesses": [
+                            "容易对常规活动感到厌倦——同一个玩具玩两天就扔一边",
+                            "好奇心过强经常制造麻烦——拆过的东西能不能拼回去全看运气",
+                            "不太主动表达情感需求——想你也不会跑过来蹭，只会默默待在你附近",
+                            "风险评估能力约等于零——越高越危险的地方它越想去"
+                        ],
+                        "scenes": [
+                            "🔧 你的笔记本电脑键盘上发现了它昨晚的「维修记录」——键帽都被试过拔下来",
+                            "🚪 学会开门只用了三天，现在全家没有一扇门是安全的",
+                            "📦 快递纸箱刚拆开它已经钻进去了，并在里面完成了「内部结构研究」"
+                        ],
+                        "tips": [
+                            "提供足够多的探索渠道——猫隧道、攀爬架、藏食玩具，让它的精力有处释放",
+                            "定期轮换玩具保持新鲜感——每两周换一批「装备」，旧玩具收起来过段时间再拿出来",
+                            "危险区域要做好防护——窗户加装护栏、电线收纳好、小零件及时清理",
+                            "欣赏它的动手能力但引导方向——给它可以拆的东西（纸箱、瓦楞板），减少破坏贵重物品的概率"
+                        ]
+                    }
+                },
+                "ISFP": {
+                    "title": "文艺慵懒猫",
+                    "description": "柔和的ISFP猫咪是一位美学鉴赏家，每天在阳光斑驳的窗台边沉思人生。它对普通逗猫棒兴趣缺缺，除非你的挥舞方式有着艺术感。它欣赏美好事物，对感官体验格外敏感。",
+                    "catStyle": "🎨 金渐层·印象派画家",
+                    "colors": ["#8fbc8f", "#f5f5dc"],
+                    "traits": ["艺术感", "敏感", "温和", "独立"],
+                    "analysis": {
+                        "title": "ISFP性格深度解析",
+                        "strengths": [
+                            "对美有独特鉴赏力——阳光最好的那块地永远是它先占领的",
+                            "温柔体贴，性情温和——几乎不会抓人或大声叫唤",
+                            "善于享受当下——躺在阳光下打盹的样子就是岁月静好本人",
+                            "对感官体验极其敏感——新买的毯子它会用脸反复蹭，确认手感达标",
+                            "有自己独特的生活节奏——不随波逐流，活得很有态度"
+                        ],
+                        "weaknesses": [
+                            "可能显得过于悠闲慵懒——动不动就躺平，活力值常年偏低",
+                            "容易受环境影响心情——阴天就不开心，下雨连饭都不想吃",
+                            "有时过于沉浸在自己的世界里——喊它名字像在对空气说话",
+                            "对粗糙或嘈杂的环境适应差——装修、聚会、吵闹都会让它压力山大"
+                        ],
+                        "scenes": [
+                            "☀️ 追着房间里的一束阳光从客厅挪到卧室，阳光走到哪它睡到哪",
+                            "🎨 新买的毛绒地毯它闻了十分钟，然后用一种「这品味还行」的表情趴上去了",
+                            "🌧 下雨天一整天蜷缩在窗边看雨，饭碗里的粮动都没动一下"
+                        ],
+                        "tips": [
+                            "为它创造舒适优美的环境——柔软的垫子、安静的角落、充足的自然光",
+                            "互动方式要柔和温和——不要突然的大动作或大声喊叫，慢慢靠近",
+                            "尊重它的「慢节奏」——不要催促它做事情，让它按自己的节奏来",
+                            "注意环境氛围的变化——阴雨天或气压低时给它更多安抚和陪伴"
+                        ]
+                    }
+                },
+                "INFP": {
+                    "title": "幻想诗人猫",
+                    "description": "富有同情心的INFP猫咪常常沉浸在自己的幻想世界。它会对飞蛾实施完美抓捕然后又放生，仿佛坚信每个生命都值得第二次机会。它感性且理想主义，总是对世界充满好奇。",
+                    "catStyle": "🪶 白手套狸花·自由诗人",
+                    "colors": ["#b2d8ff", "#e6e6fa"],
+                    "traits": ["理想主义", "富同情心", "温柔", "内省"],
+                    "analysis": {
+                        "title": "INFP性格深度解析",
+                        "strengths": [
+                            "极其丰富的情感世界和想象力——一只虫子都能跟它玩出史诗剧情",
+                            "对所有生命怀有同理心——抓到老鼠不一定会吃，可能还会放走",
+                            "对主人真诚而深沉的情感依附——一旦认定你就是一辈子的事",
+                            "能感受环境中细微的情绪变化——你叹口气它都知道为什么",
+                            "内心戏丰富到可以拍连续剧——一个表情就能脑补出一万字剧情"
+                        ],
+                        "weaknesses": [
+                            "情绪起伏较大——上一秒开心翻滚，下一秒因为一片落叶伤感",
+                            "对批评和冲突极度敏感——说它一句重话能记三天，用委屈的眼神看着你",
+                            "可能沉浸在幻想中而忽视现实——对着墙壁发呆一小时谁叫都不应",
+                            "容易因为共情太深而受伤——看到电视里的动物受苦会比你还激动"
+                        ],
+                        "scenes": [
+                            "🦋 花了两小时跟踪一只蝴蝶，最后蝴蝶停它鼻子上了，它感动得闭上了眼睛",
+                            "😿 你假装生气训了它一句，它跑到沙发角缩成一团用受伤的眼神看着你，你愧疚到现在",
+                            "🌙 深夜坐在窗边看月亮，不知道在想什么，但看起来很深邃"
+                        ],
+                        "tips": [
+                            "用温柔的语调沟通——它们对声音的情绪色彩非常敏感，温柔胜过一切",
+                            "给足安全感后再提要求——先摸摸头再说「不可以」，顺序不能反",
+                            "理解它的「发呆时间」——不是不理你，是在处理内心丰富的情感世界",
+                            "不要在大吵大闹的环境中逼它做选择——高压下它会完全封闭自己"
+                        ]
+                    }
+                },
+                "INTP": {
+                    "title": "哲学家猫",
+                    "description": "思考型的INTP猫咪是天生的理论探索者。当它推倒水杯时，实际是在验证流体力学；当它长时间盯着自己的尾巴，是在思考为什么我要摇尾巴这一存在主义命题。它的好奇心永不满足。",
+                    "catStyle": "🔬 无毛猫·量子物理学家",
+                    "colors": ["#4682b4", "#191970"],
+                    "traits": ["思考者", "好问", "独立", "分析"],
+                    "analysis": {
+                        "title": "INTP性格深度解析",
+                        "strengths": [
+                            "惊人的逻辑分析能力——知道哪个柜子里藏着最好吃的零食",
+                            "对新概念和规律的理解力超强——学会使用猫砂盆只需要一次示范",
+                            "独立性爆表——可以自己和自己玩一整天不找任何人",
+                            "通过实验探索世界——推东西下桌不是恶作剧，是在验证重力加速度",
+                            "脑回路清奇总能带来意外笑点——做的事情让你怀疑它是不是成精了"
+                        ],
+                        "weaknesses": [
+                            "可能显得过于冷漠疏离——你想亲热它却在认真研究地板纹理",
+                            "沉浸在自己的思考中完全屏蔽外界——喊破喉咙也当背景音处理",
+                            "对日常规律不够重视——吃饭？那种俗事不值得打断我的思考",
+                            "执行力跟不上脑洞——想了很多但行动力基本为零，能躺着绝不坐着"
+                        ],
+                        "scenes": [
+                            "⚗️ 盯着自己的尾巴看了20分钟，然后突然猛扑过去好像终于想通了什么",
+                            "🧪 把水杯从桌子边缘一点一点往前推，眼神专注得像在做精密实验",
+                            "💭 你跟它说话它看着你，但你确定它透过你在思考宇宙起源的问题"
+                        ],
+                        "tips": [
+                            "提供智力挑战型玩具——漏食球、迷宫盒、自动逗猫器，让大脑动起来",
+                            "尊重它的思考时间——它发呆的时候不要打扰，那是它在「运算」",
+                            "不要强求情感互动——它表达爱的方式可能是静静地待在你旁边而已",
+                            "用有趣的方式吸引注意力——普通逗猫棒不如一根绑着羽毛的绳子从书顶垂下来有意思"
+                        ]
+                    }
+                },
+                "ESTP": {
+                    "title": "极限运动猫",
+                    "description": "活力四射的ESTP猫咪是家中的冒险家。它能把窗帘当攀岩墙，执行空中转体720度并精准降落在鱼缸边缘，然后幽幽地看着你说：刺激，下次还敢。它珍视自由和刺激体验。",
+                    "catStyle": "⚡ 豹猫跑酷·极限运动员",
+                    "colors": ["#fff01f", "#373737"],
+                    "traits": ["冒险", "灵活", "现实", "直接"],
+                    "analysis": {
+                        "title": "ESTP性格深度解析",
+                        "strengths": [
+                            "无畏的冒险精神和行动力——别的猫不敢跳的距离它助跑两步就过去了",
+                            "面对新环境的适应能力MAX——带去新地方五分钟后就像在自己家一样",
+                            "运动天赋出众身体协调性极佳——空中转体落地滑行一气呵成",
+                            "充满活力能带动整个家的氛围——有它在永远不会无聊",
+                            "活在当下享受每一刻——快乐很简单，动起来就完事了"
+                        ],
+                        "weaknesses": [
+                            "容易因寻求刺激而制造混乱——今天的战利品包括：打碎的杯子+推倒的书堆",
+                            "耐心严重不足——逗猫棒玩了30秒就觉得「这题我会了」不想玩了",
+                            "挑战规则和界限是日常乐趣——越说不准上的桌子它越要以身试法",
+                            "冲动行事不考虑后果——跳了再说，落哪里算哪里"
+                        ],
+                        "scenes": [
+                            "🧗 从衣柜顶部起跑→蹬墙→抓住窗帘→荡到吊灯上→精准落在沙发上，全套动作行云流水",
+                            "🎯 把你桌上所有笔全部拨到地上，然后坐在旁边一脸无辜地看着你捡",
+                            "🏃 带出门遛弯时别的猫吓得缩包里，它已经窜上树梢在跟你招手了"
+                        ],
+                        "tips": [
+                            "提供充足的体能消耗渠道——猫爬架要够高、追逐类玩具要多、每天至少20分钟高强度互动",
+                            "设立清晰且一致的界限——哪些地方绝对不能上，说了就要坚持，否则它会把你的话当耳旁风",
+                            "用消耗精力的方式替代禁止行为——与其不许它跑酷，不如给它一条合法的「跑道」",
+                            "奖励 calm down 的时刻——它安静下来的时候立刻给予正面反馈，帮它学会自我调节"
+                        ]
+                    }
+                },
+                "ESFP": {
+                    "title": "派对巨星猫",
+                    "description": "活泼的ESFP猫咪是家中的娱乐之王。它拆家时仿佛自带BGM，每个纸箱在它眼中都是舞台，每一个观众都值得它全力表演。它热爱成为焦点，善于发现生活中的乐趣。",
+                    "catStyle": "✨ 奶牛猫·舞台C位担当",
+                    "colors": ["#ff6ba5", "#4db9ff"],
+                    "traits": ["活泼", "愉快", "表演欲", "感性"],
+                    "analysis": {
+                        "title": "ESFP性格深度解析",
+                        "strengths": [
+                            "天生的乐观精神和表演天赋——走路自带节奏感，吃饭像在品鉴米其林",
+                            "能在日常中发现无穷乐趣——一个纸团能玩出花样滑冰的水平",
+                            "社交能力满分——不管是人还是其他动物，三分钟混成熟脸",
+                            "情感表达丰富真实——开心就打滚难过就叫，从不掩饰自己的情绪",
+                            "有它在的家永远充满欢声笑语——简直是行走的快乐源泉"
+                        ],
+                        "weaknesses": [
+                            "注意力集中时间短——逗猫棒玩着玩着突然被一只苍蝇拐跑了",
+                            "过度渴望关注——你不看它它就要搞事情让你不得不看",
+                            "难以忍受寂寞和冷落——独自在家太久会抑郁到不吃不喝",
+                            "冲动消费型选手——看见什么都想玩，三分钟热度后留一堆烂摊子"
+                        ],
+                        "scenes": [
+                            "🎬 家里来了客人它立刻进入表演状态——翻滚、跳跃、侧空翻，全场MVP",
+                            "📦 快递箱子刚开封它已经跳进去开始「箱内剧场」首演了",
+                            "🎉 你回家开门的那一刻它迎接的热情程度仿佛你已经失踪了三年"
+                        ],
+                        "tips": [
+                            "每天安排固定的「演出时间」——15-20分钟的高质量互动满足它的表演欲",
+                            "提供多样化的舞台——猫隧道、吊床、攀爬架，让它的表演有不同场景",
+                            "不要长时间单独留守——如果必须外出，考虑留个智能玩具或宠物摄像头陪它",
+                            "观众效应很好用——做任何事情都可以边做边跟它说话，它超爱这种「有观众」的感觉"
+                        ]
+                    }
+                },
+                "ENFP": {
+                    "title": "社交悍匪猫",
+                    "description": "热情洋溢的ENFP猫咪是社交界的闪耀之星。它能在5分钟内和扫地机器人成为挚友，又能迅速将好奇心转向新玩具。它充满创意和想象力，对一切新事物都充满好奇。",
+                    "catStyle": "🌈 橘猫·社交达人",
+                    "colors": ["#ff0000", "#ff7f00", "#ffff00", "#00ff00", "#0000ff", "#4b0082", "#8b00ff"],
+                    "traits": ["热情", "创新", "活力", "好奇"],
+                    "analysis": {
+                        "title": "ENFP性格深度解析",
+                        "strengths": [
+                            "交际能力堪比社交牛x症——快递小哥、邻居、楼下的狗都是它的朋友",
+                            "创意和想象力爆棚——普通的纸箱在它眼里可以是城堡也可以是飞船",
+                            "对新事物的热情永不停歇——今天迷激光明天追影子后天研究水龙头",
+                            "感染力极强——它开心的时候整个屋子都跟着明媚起来了",
+                            "真诚热情不设防——见谁都摇尾巴，相信这个世界全是好人"
+                        ],
+                        "weaknesses": [
+                            "兴趣点切换速度太快——上一个玩具还没玩够下一个已经上线了",
+                            "有时热情过头变成打扰——半夜三点突然想跟你「聊聊人生」",
+                            "很难长期专注于一件事——三分钟热度是常态，持久战是例外",
+                            "容易因为新鲜感而忽略熟悉的人和事——新人来了立刻把旧的抛在脑后"
+                        ],
+                        "scenes": [
+                            "🤝 第一次见的兽医它都要去蹭人家的腿，搞得医生以为你们感情很深",
+                            "💡 昨天的最爱是红色小球今天变成了你的耳机线，明天可能就是你头发",
+                            "🎉 朋友来家里做客它挨个打招呼，最后一个不漏，社交礼仪满分"
+                        ],
+                        "tips": [
+                            "不断提供新鲜刺激——每周换个玩法、每月添个新玩具，满足它无限的好奇心",
+                            "社交活动要适量安排——带它见新朋友、去新环境探索，但要确保基础安全感",
+                            "利用它的影响力带动内向的同伴——多猫家庭中它是最好的破冰大使",
+                            "当它「冷落」旧玩具时不要急着扔——过两周重新拿出来它又会像初次见面一样兴奋"
+                        ]
+                    }
+                },
+                "ENTP": {
+                    "title": "诡辩家猫",
+                    "description": "机智的ENTP猫咪是家中的辩论冠军。当它故意打翻水杯并被抓现行时，会瞪大无辜的眼睛质问：你有什么证据证明是我干的？它灵活的思维和挑战权威的态度令人啼笑皆非。",
+                    "catStyle": "🎩 暹罗侦探·推理名探",
+                    "colors": ["#000000", "#ffffff"],
+                    "traits": ["辩论", "聪明", "创新", "挑战性"],
+                    "analysis": {
+                        "title": "ENTP性格深度解析",
+                        "strengths": [
+                            "超乎寻常的智慧和创造力——你设的防猫措施在它看来都是入门级谜题",
+                            "总能找到非常规解决方案——门关了？那就走窗。窗关了？那就挖洞（划掉）那就叫",
+                            "适应性强热爱挑战——越难得到的零食它越有兴趣去争取",
+                            "家庭乐趣制造机——每天都在上演「猫vs铲屎官」的智力对决",
+                            "逻辑鬼才——犯错被抓时的表情管理堪称奥斯卡级别"
+                        ],
+                        "weaknesses": [
+                            "频繁突破规则底线——你说的「不行」在它听来是「你来想办法啊」",
+                            "热衷于挑战主人权威——你越生气它越觉得这是一个有趣的博弈局",
+                            "有时候过于固执己见——认准的事情九头牛都拉不回",
+                            "恶作剧不分场合和时间——凌晨三点搞事情也不觉得有什么问题"
+                        ],
+                        "scenes": [
+                            "🎭 打翻水杯后被当场抓获，它坐下开始洗脸，仿佛在说：我只是路过",
+                            "❓ 你说「不许上桌子」，它把前爪搭在桌子上——技术上我没上去",
+                            "🧩 你换了更复杂的喂食器锁，它观察了两天后在你面前优雅地打开了"
+                        ],
+                        "tips": [
+                            "设定明确但有弹性的边界——有些红线绝对不能碰，其他地方可以适度「谈判」",
+                            "给它足够的智力挑战——解谜玩具、多层喂食器，让它的脑力用在正道上",
+                            "偶尔让它赢——不是真的认输，而是让它觉得「我凭本事做到了」，满足成就感",
+                            "不要跟它硬刚——你越生气它越兴奋，冷静无视反而让它觉得没意思而放弃"
+                        ]
+                    }
+                },
+                "ESTJ": {
+                    "title": "项目经理猫",
+                    "description": "有条理的ESTJ猫咪是家庭运营的总监。它会监督你按时铲屎，用喵喵拳提醒该给本喵梳毛了，甚至会制定严格的《家庭罐头分配制度》。它的组织能力令人叹为观止。",
+                    "catStyle": "👔 美短·企业高管",
+                    "colors": ["#000080", "#ff3333"],
+                    "traits": ["组织", "务实", "领导", "决断"],
+                    "analysis": {
+                        "title": "ESTJ性格深度解析",
+                        "strengths": [
+                            "出色的组织能力和时间观念——全家谁的作息乱了它第一个出来管",
+                            "行动力超强说干就干——发现问题立刻解决，绝不拖泥带水",
+                            "领导才能出众——多猫家庭中它天然就是老大，其他猫都服它",
+                            "对秩序有极强的责任感——猫砂盆脏了它会来催你去铲，比你妈还靠谱",
+                            "做事井井有条效率极高——吃饭、睡觉、巡逻的时间安排得明明白白"
+                        ],
+                        "weaknesses": [
+                            "可能过于强势专制——它的意志就是法律，不接受反驳",
+                            "对规则的执着有时让人疲惫——猫碗必须朝东摆放这件事它真的很在意",
+                            "不太善于处理情感问题——你哭了它可能会先确认你有没有忘了喂它",
+                            "控制欲较强——家里每个成员在干什么它都要知道和审批"
+                        ],
+                        "scenes":[
+                            "📋 早上7:00准时站在你枕边催起床，因为你迟到了而且猫碗还是空的",
+                            "👔 新来的小猫不懂规矩乱跑，它亲自出面教育（追着舔毛直到对方屈服）",
+                            "⏰ 喂食时间晚了两分钟，它已经开始用一种「解释一下？」的眼神盯着你看"
+                        ],
+                        "tips": [
+                            "保持规律的时间表——这是ESTJ猫咪安全感的来源，也是和平共处的基础",
+                            "认可它的「管理能力」——适当夸奖它的责任心，让它感到自己的付出被看到",
+                            "温和但坚定地划定边界——你可以配合它的节奏但不能让它完全主导你的生活",
+                            "给它一些「管理工作」——让它参与决策过程（比如选哪种猫粮），满足领导欲"
+                        ]
+                    }
+                },
+                "ESFJ": {
+                    "title": "居委会主任猫",
+                    "description": "热心的ESFJ猫咪是多猫家庭的调解专家。它总是关注每只猫的情绪和需求，在猫猫打架时挺身而出，用舔毛动作表达给我个面子别打了。它以维持家庭和谐为己任。",
+                    "catStyle": "🚩 加菲·社区暖心站长",
+                    "colors": ["#ffa500", "#ffffff"],
+                    "traits": ["关怀", "责任感", "合作", "社交"],
+                    "analysis": {
+                        "title": "ESFJ性格深度解析",
+                        "strengths": [
+                            "高度的社交协调能力——家里有任何矛盾它第一时间冲过去调停",
+                            "对每位家庭成员的情感需求超级敏感——谁不开心了它第一个去安慰",
+                            "乐于付出关爱和照顾——给每只猫都舔过毛，公平公正不偏心",
+                            "营造温馨和谐的氛围——有它在的家感觉特别温暖有爱",
+                            "天生的大管家属性——所有人的吃喝拉撒它都在默默关注着"
+                        ],
+                        "weaknesses": [
+                            "过度关心他人导致自己压力大——操心太多有时候会焦虑掉毛",
+                            "占有欲和控制欲藏在关心之下——「我是为你好」其实是「你要听我的」",
+                            "难以应对批评和冲突——被批评时会受伤很久，家里吵架它会最先崩溃",
+                            "讨好型倾向——为了让大家都开心常常忽略了自己的需求"
+                        ],
+                        "scenes": [
+                            "🤝 两只小猫抢玩具打起来，它冲过去夹在中间一人舔一下直到双方和好",
+                            "😿 家里来了陌生人它紧张地来回巡视确保每个人（包括客人）都好好的",
+                            "💝 你生病躺在床上它哪儿也不去就守着你，时不时用头顶你的手确认你还活着"
+                        ],
+                        "tips": [
+                            "给予充分的社交机会和情感回应——它需要感到被需要和被感激",
+                            "不要让它承担过多责任——调解员很辛苦，偶尔让它卸下担子好好休息",
+                            "赞美和感谢是最好的奖励——口头表扬、额外的抚摸、优质的零食都是它的动力来源",
+                            "关注它隐藏的需求——它总在照顾别人，你要主动照顾它"
+                        ]
+                    }
+                },
+                "ENFJ": {
+                    "title": "心灵导师猫",
+                    "description": "温暖的ENFJ猫咪是天生的领袖和心灵治愈师。它会带领胆小的新猫熟悉环境，用头蹭行为表达跟着大哥有罐吃。它能敏锐察觉每位家庭成员的情绪，并给予支持。",
+                    "catStyle": "🦁 森林猫·狮心领袖",
+                    "colors": ["#2e8b57", "#ffd700"],
+                    "traits": ["鼓舞", "关怀", "领导", "有远见"],
+                    "analysis": {
+                        "title": "ENFJ性格深度解析",
+                        "strengths": [
+                            "卓越的情感连接能力——全家每个人的心情它都在默默守护着",
+                            "天生的引导者和保护者——新成员加入时它主动承担「导游」角色",
+                            "善于鼓励和安慰——谁不开心了它都会过去用头蹭蹭表示支持",
+                            "有远见能预见团队需求——粮食快没了它比你还先知道并来提醒",
+                            "人格魅力强大——其他猫和人都会不由自主地信任和追随它"
+                        ],
+                        "weaknesses": [
+                            "过度担忧他人情绪——别人的不开心它会当成自己的责任",
+                            "常常忽略自身需求——忙着照顾所有人唯独忘了照顾自己",
+                            "对冷漠和无回应特别敏感——你若是不理它它会陷入深深的自我怀疑",
+                            "理想化期待太高——希望所有人都和睦相处，现实不如意时会沮丧"
+                        ],
+                        "scenes": [
+                            "🦁 新来的小猫躲在沙发下发抖，它慢慢靠近躺下来陪着，用体温传递安全感",
+                            "💪 你失业在家情绪低落的那段日子，它比平时更粘人，寸步不离地陪着你",
+                            "🌟 家里有猫吵架它立刻站出来当和事佬，用一种「都给我面子」的气场镇住场面"
+                        ],
+                        "tips": [
+                            "肯定和感谢它的付出——告诉它「谢谢你照顾我们」，它会很满足",
+                            "关注它自己的情绪状态——它一直在发光发热，别忘了给它充电",
+                            "赋予它正式的角色——比如迎接新成员时请它「带队」，让它感到被重视",
+                            "不要对它冷淡——即使很忙也要给它一个眼神或摸一下，忽略它会让它非常受伤"
+                        ]
+                    }
+                },
+                "ENTJ": {
+                    "title": "霸道总裁猫",
+                    "description": "果断的ENTJ猫咪是家中的天然统治者。凌晨3点它可能踩在你脸上要求开罐头，眼神中写满我不是在请求，是在通知。它有清晰的目标和强大的执行力，相信效率高于一切。",
+                    "catStyle": "👑 阿比西尼亚·帝国CEO",
+                    "colors": ["#8b0000", "#d4af37"],
+                    "traits": ["决断", "战略", "领导", "野心"],
+                    "analysis": {
+                        "title": "ENTJ性格深度解析",
+                        "strengths": [
+                            "超强的决断力和执行能力——决定要做的事没有任何力量能阻挡",
+                            "卓越的策略思维和规划能力——为了得到想要的东西可以设计精密的多步骤计划",
+                            "自信果敢绝不妥协——谈判桌上（也就是饭碗前）从未输过",
+                            "目标导向效率至上——从决定开罐到吃到嘴里整个过程不超过30秒",
+                            "天生领袖气质——走进房间就知道谁是这里的老大"
+                        ],
+                        "weaknesses": [
+                            "可能显得专制和傲慢——它的需求高于一切其他人（和猫）的需求",
+                            "不太顾及他人感受——你要睡觉？跟我有关系吗？我要吃罐头了",
+                            "过于直接缺乏耐心——「现在」就是它的默认时间概念，「等待」不在字典里",
+                            "控制欲强难以接受拒绝——你说不行它会用更高分贝的叫声说服你改变主意"
+                        ],
+                        "scenes": [
+                            "👑 凌晨3点踩在你脸上，眼神坚定地告诉你：该工作了（指开罐头）",
+                            "📋 全家人的吃饭顺序由它决定——先自己再按等级依次分配，不容质疑",
+                            "🎯 你说今天不能吃零食，它盯着你看了整整一分钟然后开始实施B计划（闹到 you say yes 为止）"
+                        ],
+                        "tips": [
+                            "建立相互尊重的关系——既不完全服从也不硬刚，找到平衡点",
+                            "清晰一致地表达界限——说到做到，否则它会觉得你软弱可欺",
+                            "给它适当的「决策权」——让它在一些小事上有掌控感（比如先吃左边的还是右边的）",
+                            "欣赏它的领导才能——强大的猫咪需要同样强大的主人，展现出你的决断力它会更加尊重你"
+                        ]
+                    }
+                }
+            };
+            
+            // 优化后的题目列表 - 使用"猫猫"替代"您的猫"，更加亲切友好
+            const questions = [
+                {
+                    question: "当家里来了陌生客人，猫猫通常会：",
+                    options: [
+                        "主动出来迎接并检查客人的包包和衣服",
+                        "躲进安全区域，保持观察直到客人离开"
+                    ],
+                    dimension: "EI"
+                },
+                {
+                    question: "猫猫与其他猫咪相处时：",
+                    options: [
+                        "很快熟络起来，主动互动或一起玩耍",
+                        "保持距离，守护自己的领地和玩具"
+                    ],
+                    dimension: "EI"
+                },
+                {
+                    question: "当你一天工作结束回家时，猫猫会：",
+                    options: [
+                        "兴奋地在门口迎接，发出声音并围着你转圈",
+                        "观察你一会儿才慢慢靠近，或等你主动呼唤"
+                    ],
+                    dimension: "EI"
+                },
+                {
+                    question: "窗外有鸟或松鼠时，猫猫会：",
+                    options: [
+                        "兴奋地发出声音，甚至拍打窗户试图互动",
+                        "安静地观察，保持隐蔽或假装不在意"
+                    ],
+                    dimension: "EI"
+                },
+                {
+                    question: "猫猫对哪种玩具表现出更大兴趣？",
+                    options: [
+                        "虚幻变化的光点或投影，抓不到的神秘物体",
+                        "可以实际抓住和咬的实体玩具，如毛绒鼠或逗猫棒"
+                    ],
+                    dimension: "NS"
+                },
+                {
+                    question: "当家里出现新物品（如新家具）时，猫猫：",
+                    options: [
+                        "充满好奇心立即探索，试图理解这个新事物",
+                        "保持距离警惕观察，等确认安全后才靠近"
+                    ],
+                    dimension: "NS"
+                },
+                {
+                    question: "猫猫在寻找食物或玩具时：",
+                    options: [
+                        "表现出惊人的创造力，会挖掘意想不到的地方",
+                        "主要检查常规位置，如食盆或固定的储存处"
+                    ],
+                    dimension: "NS"
+                },
+                {
+                    question: "面对可能即将发生的洗澡或去兽医，猫猫：",
+                    options: [
+                        "提前预判并躲藏，甚至在你拿出猫包时就消失",
+                        "直到被抱进浴室或看到兽医才意识到状况"
+                    ],
+                    dimension: "NS"
+                },
+                {
+                    question: "经历不愉快的体验（如兽医回来）后，猫猫：",
+                    options: [
+                        "很快恢复正常，接受现实并继续生活",
+                        "明显情绪低落，可能拒绝进食或躲避互动一段时间"
+                    ],
+                    dimension: "TF"
+                },
+                {
+                    question: "当你情绪低落或哭泣时，猫猫会：",
+                    options: [
+                        "表现得相对冷静，可能在旁边但不特别反应",
+                        "明显察觉你的情绪变化，试图安慰或保持陪伴"
+                    ],
+                    dimension: "TF"
+                },
+                {
+                    question: "当你拿走猫猫正在玩的玩具时，它会：",
+                    options: [
+                        "很快接受并寻找新的活动或玩具",
+                        "表现出明显的不满或坚持要回原来的玩具"
+                    ],
+                    dimension: "TF"
+                },
+                {
+                    question: "当需要修剪指甲或给药时，猫猫：",
+                    options: [
+                        "尽管不喜欢但会相对配合，似乎理解这是必要的",
+                        "强烈抗议，好像这是对它的背叛和伤害"
+                    ],
+                    dimension: "TF"
+                },
+                {
+                    question: "猫猫的进食习惯是：",
+                    options: [
+                        "随心所欲，饿了就吃，不饿就走开，不在意时间",
+                        "有规律的进食模式，到点就要求喂食，碗空立刻抗议"
+                    ],
+                    dimension: "PJ"
+                },
+                {
+                    question: "关于睡觉地点，猫猫：",
+                    options: [
+                        "经常变换睡觉地点，今天沙发明天书架后天床上",
+                        "有固定的偏好地点，长期不变或只在几个固定点轮换"
+                    ],
+                    dimension: "PJ"
+                },
+                {
+                    question: "使用猫砂盆后，猫猫：",
+                    options: [
+                        "简单地刨几下了事，有时甚至完全不掩盖",
+                        "进行详细的掩埋仪式，直到完全满意为止"
+                    ],
+                    dimension: "PJ"
+                },
+                {
+                    question: "当日常习惯被打破（如晚喂食或更换猫砂品牌）时：",
+                    options: [
+                        "适应良好，几乎不受影响继续正常活动",
+                        "明显不安或抗议，坚持要恢复原有秩序"
+                    ],
+                    dimension: "PJ"
+                },
+                {
+                    question: "猫猫探索新环境时：",
+                    options: [
+                        "喜欢自由探索各个角落，不按特定顺序行动",
+                        "按照系统性路线探索，似乎在建立心理地图"
+                    ],
+                    dimension: "PJ"
+                },
+                {
+                    question: "当多只猫争夺同一玩具或食物时，猫猫：",
+                    options: [
+                        "灵活变通，可能让步或寻找替代品",
+                        "坚持己见，明确表达自己的权利和边界"
+                    ],
+                    dimension: "PJ"
+                },
+                {
+                    question: "面对禁止的行为（如上桌子）被阻止时：",
+                    options: [
+                        "寻找新的可能性和变通方法",
+                        "反复尝试相同的行为直到成功"
+                    ],
+                    dimension: "PJ"
+                },
+                {
+                    question: "猫猫玩耍的方式更多是：",
+                    options: [
+                        "即兴发挥，随机应变，创造性地使用周围环境",
+                        "重复熟悉的游戏模式，有特定的玩耍流程"
+                    ],
+                    dimension: "PJ"
+                }
+            ];
+            
+            // 显示特定步骤的函数
+            function showStep(step) {
+                document.getElementById(currentStep).classList.add('hidden');
+                document.getElementById(step).classList.remove('hidden');
+                currentStep = step;
+            }
+            
+            // 添加事件监听器
+            document.getElementById('startBtn').addEventListener('click', function() {
+                showStep('step1');
+            });
+            
+            document.getElementById('backToHome').addEventListener('click', function() {
+                showStep('homepage');
+            });
+            
+            document.getElementById('goToStep2').addEventListener('click', function() {
+                if (!catPhoto) {
+                    alert('请上传猫猫照片');
+                    return;
+                }
+                showStep('step2');
+            });
+            
+            document.getElementById('backToStep1').addEventListener('click', function() {
+                showStep('step1');
+            });
+            
+            document.getElementById('generateInitial').addEventListener('click', function() {
+                generateInitialCard();
+            });
+            
+            document.getElementById('backToStep2').addEventListener('click', function() {
+                showStep('step2');
+            });
+            
+            document.getElementById('startTestBtn').addEventListener('click', function() {
+                startTest();
+            });
+            
+            document.getElementById('prevQuestion').addEventListener('click', function() {
+                showPreviousQuestion();
+            });
+            
+            document.getElementById('nextQuestion').addEventListener('click', function() {
+                showNextQuestion();
+            });
+            
+            document.getElementById('takeScreenshotBtn').addEventListener('click', function() {
+                takeScreenshot();
+            });
+            
+            document.getElementById('resetTestBtn').addEventListener('click', function() {
+                resetTest();
+            });
+            
+            // 性别选择事件
+            document.getElementById('genderMale').addEventListener('click', function() {
+                selectGender('male', this);
+            });
+            
+            document.getElementById('genderFemale').addEventListener('click', function() {
+                selectGender('female', this);
+            });
+            
+            document.getElementById('genderUnknown').addEventListener('click', function() {
+                selectGender('unknown', this);
+            });
+            
+            // 照片上传事件 - 打开裁切弹窗
+            document.getElementById('photoInput').addEventListener('change', function(event) {
+                openCropModal(event);
+            });
+
+            // 裁切器实例（全局管理，避免重复创建）
+            let cropperInstance = null;
+
+            // 打开裁切弹窗
+            function openCropModal(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const cropImage = document.getElementById('cropImage');
+                    const cropModal = document.getElementById('cropModal');
+
+                    // 设置图片源
+                    cropImage.src = e.target.result;
+
+                    // 显示弹窗
+                    cropModal.classList.add('active');
+
+                    // 如果已有实例先销毁
+                    if (cropperInstance) {
+                        cropperInstance.destroy();
+                        cropperInstance = null;
+                    }
+
+                    // 初始化 Cropper.js
+                    cropperInstance = new Cropper(cropImage, {
+                        aspectRatio: 1,
+                        viewMode: 1,
+                        autoCropArea: 0.8,
+                        background: false,
+                        movable: true,
+                        zoomable: true,
+                        rotatable: false,
+                        scalable: false
+                    });
+                };
+                reader.readAsDataURL(file);
+
+                // 重置 input，允许重复选择同一文件
+                event.target.value = '';
+            }
+
+            // 应用剪裁
+            document.getElementById('applyCrop').addEventListener('click', function() {
+                if (!cropperInstance) return;
+
+                const canvas = cropperInstance.getCroppedCanvas({
+                    width: 360,
+                    height: 360,
+                    minWidth: 180,
+                    minHeight: 180,
+                    maxWidth: 720,
+                    maxHeight: 720,
+                    fillColor: '#fff',
+                    imageSmoothingEnabled: true,
+                    imageSmoothingQuality: 'high'
+                });
+
+                if (canvas) {
+                    catPhoto = canvas.toDataURL('image/png');
+
+                    // 更新预览
+                    const preview = document.getElementById('photoPreview');
+                    preview.innerHTML = '';
+                    const img = document.createElement('img');
+                    img.src = catPhoto;
+                    preview.appendChild(img);
+
+                    // 关闭弹窗
+                    closeCropModal();
+                }
+            });
+
+            // 取消剪裁
+            document.getElementById('cancelCrop').addEventListener('click', function() {
+                closeCropModal();
+            });
+
+            // 关闭裁切弹窗
+            function closeCropModal() {
+                const cropModal = document.getElementById('cropModal');
+                cropModal.classList.remove('active');
+
+                if (cropperInstance) {
+                    cropperInstance.destroy();
+                    cropperInstance = null;
+                }
+            }
+
+            // 选择性别
+            function selectGender(selectedGender, element) {
+                // 移除之前的选择
+                const options = document.querySelectorAll('.gender-option');
+                options.forEach(option => {
+                    option.classList.remove('selected');
+                });
+                
+                // 添加新选择
+                element.classList.add('selected');
+                gender = selectedGender;
+            }
+            
+            // 生成初始档案卡
+            function generateInitialCard() {
+                catName = document.getElementById('catName').value || '喵主子';
+                
+                if (!catPhoto) {
+                    alert('请上传猫猫照片');
+                    return;
+                }
+                
+                // 更新初始档案卡
+                document.getElementById('resultName').textContent = catName;
+                document.getElementById('resultPhoto').src = catPhoto;
+                
+                // 显示步骤3
+                showStep('step3');
+            }
+            
+            // 开始测试
+            function startTest() {
+                // 使用猫猫名字替换问题中的"猫猫"
+                updateQuestionsWithCatName();
+                
+                currentQuestion = 0;
+                answers = new Array(questions.length).fill(null);
+                showQuestion(currentQuestion);
+                showStep('test');
+            }
+            
+            // 使用猫猫名字替换问题中的"猫猫"
+            function updateQuestionsWithCatName() {
+                questions.forEach(q => {
+                    q.originalQuestion = q.question; // 保存原始问题
+                    q.question = q.question.replace("猫猫", catName);
+                });
+            }
+            
+            // 显示问题
+            function showQuestion(index) {
+                const questionContainer = document.getElementById('questionContainer');
+                const currentQuestionText = document.getElementById('currentQuestionText');
+                const percentComplete = document.getElementById('percentComplete');
+                const progressFill = document.getElementById('progressFill');
+                const question = questions[index];
+                
+                // 更新进度显示
+                currentQuestionText.textContent = `问题 ${index + 1}/${questions.length}`;
+                const percent = Math.round(((index) / questions.length) * 100);
+                percentComplete.textContent = `${percent}%`;
+                progressFill.style.width = `${percent}%`;
+                
+                // 创建问题HTML
+                let questionHTML = `
+                    <h3>${question.question}</h3>
+                    <div class="options">
+                        <div class="option ${answers[index] === 0 ? 'selected' : ''}" data-option="0">
+                            ${question.options[0]}
+                        </div>
+                        <div class="option ${answers[index] === 1 ? 'selected' : ''}" data-option="1">
+                            ${question.options[1]}
+                        </div>
+                    </div>
+                `;
+                
+                questionContainer.innerHTML = questionHTML;
+                
+                // 为选项添加事件监听器
+                const options = questionContainer.querySelectorAll('.option');
+                options.forEach(option => {
+                    option.addEventListener('click', function() {
+                        const optionIndex = parseInt(this.getAttribute('data-option'));
+                        selectOption(optionIndex);
+                    });
+                });
+                
+                // 更新导航按钮状态
+                document.getElementById('prevQuestion').disabled = index === 0;
+                document.getElementById('nextQuestion').textContent = index === questions.length - 1 ? '查看结果' : '下一题';
+            }
+            
+            // 选择选项
+            function selectOption(optionIndex) {
+                answers[currentQuestion] = optionIndex;
+                
+                // 更新选项样式
+                const options = document.querySelectorAll('.option');
+                options.forEach((option, index) => {
+                    if (index === optionIndex) {
+                        option.classList.add('selected');
+                    } else {
+                        option.classList.remove('selected');
+                    }
+                });
+            }
+            
+            // 显示下一题
+            function showNextQuestion() {
+                if (answers[currentQuestion] === null) {
+                    alert('请选择一个选项');
+                    return;
+                }
+                
+                if (currentQuestion < questions.length - 1) {
+                    currentQuestion++;
+                    showQuestion(currentQuestion);
+                } else {
+                    calculateResult();
+                }
+            }
+            
+            // 显示上一题
+            function showPreviousQuestion() {
+                if (currentQuestion > 0) {
+                    currentQuestion--;
+                    showQuestion(currentQuestion);
+                }
+            }
+            
+            // 计算测试结果 - 优化算法
+            function calculateResult() {
+                // 重置详细结果对象
+                detailedResults = {
+                    E: 0, I: 0, // 外向 vs 内向
+                    N: 0, S: 0, // 直觉 vs 感觉
+                    T: 0, F: 0, // 思考 vs 感受
+                    P: 0, J: 0  // 灵活 vs 判断
+                };
+                
+                // 统计每个维度的得分
+                for (let i = 0; i < questions.length; i++) {
+                    const dimension = questions[i].dimension;
+                    const answer = answers[i];
+                    
+                    if (dimension === "EI") {
+                        if (answer === 0) detailedResults.E++;
+                        else detailedResults.I++;
+                    } else if (dimension === "NS") {
+                        if (answer === 0) detailedResults.N++;
+                        else detailedResults.S++;
+                    } else if (dimension === "TF") {
+                        if (answer === 0) detailedResults.T++;
+                        else detailedResults.F++;
+                    } else if (dimension === "PJ") {
+                        if (answer === 0) detailedResults.P++;
+                        else detailedResults.J++;
+                    }
+                }
+                
+                // 确定MBTI类型
+                const mbtiType = 
+                    (detailedResults.E > detailedResults.I ? "E" : "I") + 
+                    (detailedResults.N > detailedResults.S ? "N" : "S") + 
+                    (detailedResults.T > detailedResults.F ? "T" : "F") + 
+                    (detailedResults.P > detailedResults.J ? "P" : "J");
+                
+                // 计算各维度的百分比强度
+                const dimensions = [
+                    {
+                        top: "E", 
+                        bottom: "I", 
+                        value: Math.round((detailedResults.E / (detailedResults.E + detailedResults.I)) * 100)
+                    },
+                    {
+                        top: "N", 
+                        bottom: "S", 
+                        value: Math.round((detailedResults.N / (detailedResults.N + detailedResults.S)) * 100)
+                    },
+                    {
+                        top: "T", 
+                        bottom: "F", 
+                        value: Math.round((detailedResults.T / (detailedResults.T + detailedResults.F)) * 100)
+                    },
+                    {
+                        top: "P", 
+                        bottom: "J", 
+                        value: Math.round((detailedResults.P / (detailedResults.P + detailedResults.J)) * 100)
+                    }
+                ];
+                
+                // 显示结果
+                displayResult(mbtiType, dimensions);
+            }
+            
+            // 显示结果 - 优化展示效果
+            function displayResult(mbtiType, dimensions) {
+                const mbtiInfo = mbtiData[mbtiType];
+                
+                // 更新结果卡
+                document.getElementById('finalPhoto').src = catPhoto;
+                document.getElementById('finalName').textContent = catName;
+                document.getElementById('mbtiType').textContent = mbtiType;
+                document.getElementById('mbtiTitle').textContent = mbtiInfo.title;
+                document.getElementById('mbtiDescription').textContent = mbtiInfo.description;
+                // 渲染猫设角色卡（emoji + 文字）
+                const catStyleEl = document.getElementById('catStyle');
+                const styleText = mbtiInfo.catStyle;
+                const emoji = styleText.match(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}]/u)?.[0] || '🐱';
+                const namePart = styleText.replace(/^[^\s]+\s*/, '');
+                catStyleEl.innerHTML = `
+                    <span class="cat-style-emoji">${emoji}</span>
+                    <div class="cat-style-text">
+                        <span class="cat-style-label">适合猫设</span>
+                        <span class="cat-style-value">${namePart}</span>
+                    </div>
+                `;
+                
+                // 设置MBTI主题颜色
+                const colors = mbtiInfo.colors;
+                const resultHeader = document.getElementById('resultHeader');
+                
+                if (colors.length === 2) {
+                    resultHeader.style.background = `linear-gradient(135deg, ${colors[0]} 0%, ${colors[1]} 100%)`;
+                } else if (colors.length > 2) {
+                    // 处理多色（如彩虹色）
+                    let gradient = 'linear-gradient(135deg, ';
+                    const step = 100 / colors.length;
+                    
+                    colors.forEach((color, index) => {
+                        gradient += `${color} ${index * step}%, ${color} ${(index + 1) * step}%`;
+                        if (index < colors.length - 1) gradient += ', ';
+                    });
+                    
+                    gradient += ')';
+                    resultHeader.style.background = gradient;
+                }
+                
+                // 添加特质标签
+                const traitTags = document.getElementById('traitTags');
+                let tagsHTML = '';
+                
+                mbtiInfo.traits.forEach(trait => {
+                    tagsHTML += `<div class="trait-tag">${trait}</div>`;
+                });
+                
+                traitTags.innerHTML = tagsHTML;
+                
+                // 添加性格分析
+                const personalityAnalysis = document.getElementById('personalityAnalysis');
+                const analysis = mbtiInfo.analysis;
+                
+                let analysisHTML = `
+                    <h4>${analysis.title}</h4>
+                    <p><strong>优势特点：</strong></p>
+                    <ul class="analysis-list">
+                `;
+                
+                analysis.strengths.forEach(strength => {
+                    analysisHTML += `<li>${strength}</li>`;
+                });
+                
+                analysisHTML += `
+                    </ul>
+                    <p><strong>潜在挑战：</strong></p>
+                    <ul class="analysis-list">
+                `;
+                
+                analysis.weaknesses.forEach(weakness => {
+                    analysisHTML += `<li>${weakness}</li>`;
+                });
+                
+                analysisHTML += `
+                    </ul>
+                `;
+
+                // 渲染"经典名场面"——让主人产生共鸣的场景描述
+                if (analysis.scenes && analysis.scenes.length > 0) {
+                    analysisHTML += `
+                        <div class="analysis-scenes">
+                            <p><strong>🎬 经典名场面：</strong></p>
+                            <ul class="scenes-list">
+                    `;
+                    analysis.scenes.forEach(scene => {
+                        analysisHTML += `<li>${scene}</li>`;
+                    });
+                    analysisHTML += `
+                            </ul>
+                        </div>
+                    `;
+                }
+
+                // 渲染"相处建议"——tips 现在是数组
+                analysisHTML += `<p><strong>💡 相处建议：</strong></p>`;
+                if (Array.isArray(analysis.tips)) {
+                    analysisHTML += `<ul class="analysis-tips-list">`;
+                    analysis.tips.forEach(tip => {
+                        analysisHTML += `<li>${tip}</li>`;
+                    });
+                    analysisHTML += `</ul>`;
+                } else {
+                    // 向后兼容：如果 tips 还是字符串
+                    analysisHTML += `<p class="analysis-tips-text">${analysis.tips}</p>`;
+                }
+                
+                personalityAnalysis.innerHTML = analysisHTML;
+                
+                // 添加维度百分比可视化
+                const mbtiStats = document.getElementById('mbtiStats');
+                let statsHTML = '';
+                
+                dimensions.forEach(dim => {
+                    // 计算填充高度
+                    const topHeight = 100; // E, N, T, P 的百分比
+                    const bottomHeight = dim.value; // I, S, F, J 的百分比
+                    
+                    // 决定显示哪个百分比
+                    const displayedValue = topHeight > bottomHeight ? 
+                        `${topHeight}%` : `${bottomHeight}%`;
+                    const displayedLetter = topHeight > bottomHeight ? 
+                        dim.top : dim.bottom;
+                    
+                    statsHTML += `
+                        <div class="stat-item">
+                            <div class="stat-labels">
+                                <div class="top">${dim.top}</div>
+                            </div>
+                            <div class="stat-bar">
+                                <div class="stat-fill" style="height: ${topHeight}%"></div>
+                            </div>
+                            <div class="stat-labels">
+                                <div class="bottom">${dim.bottom}</div>
+                                <div class="value">${displayedLetter} ${displayedValue}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                mbtiStats.innerHTML = statsHTML;
+                
+                // 显示结果页面
+                showStep('result');
+            }
+            
+            // 使用 html2canvas 截图并下载身份卡
+            function takeScreenshot() {
+                const btn = document.getElementById('takeScreenshotBtn');
+                const originalText = btn.textContent;
+                btn.textContent = '正在生成图片...';
+                btn.disabled = true;
+
+                const card = document.getElementById('finalCard');
+
+                html2canvas(card, {
+                    useCORS: true,
+                    allowTaint: false,
+                    scale: 2,
+                    backgroundColor: '#ffffff',
+                    logging: false
+                }).then(function(canvas) {
+                    const link = document.createElement('a');
+                    link.download = catName + '-猫猫MBTI身份卡.png';
+                    link.href = canvas.toDataURL('image/png');
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                }).catch(function(err) {
+                    console.error('截图失败:', err);
+                    alert('图片生成失败，请尝试使用手机截图功能保存卡片');
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                });
+            }
+            
+            // 重置测试
+            function resetTest() {
+                showStep('homepage');
+            }
+        });
+    </script>
+
+
+</body></html>
